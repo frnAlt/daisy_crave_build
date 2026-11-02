@@ -11,45 +11,6 @@ It combines:
 
 ---
 
-## 📁 Repository Structure
-
-```text
-.
-├── local_manifests.xml         # Unified universal local manifest
-├── manifests/
-│   ├── daisy.xml               # Clean hardware, device, vendor, kernel trees
-│   ├── los_replacements.xml    # Replacements & removals for LineageOS/Lunaris builds
-│   └── extra_features.xml      # ViPER4AndroidFX, Dolby, Datura, and signing keys
-├── patches/
-│   ├── 0003-run-recovery-permissive.patch
-│   ├── 0004-sepolicy-allow-permissive-user.patch
-│   ├── 0005-systeminfo-skip-per-process-GPU.patch
-│   ├── 0006-remove-install-recovery.patch
-│   ├── 0007-msm8996.patch
-│   ├── 0011-fw_n-kill-gpuwork.patch
-│   ├── 0012-setupwizard_skip.patch
-│   ├── 0013-microg_user_build_fix.patch
-│   ├── 0017-packages_modules_Connectivity-no-BTF.patch
-│   └── legacy_compat/          # Universal per-project patches for any ROM type
-│       ├── build_make/
-│       ├── frameworks_native/
-│       ├── hardware_interfaces/
-│       ├── hardware_qcom-caf_common/
-│       ├── hardware_qcom-caf_msm8996_audio/
-│       ├── hardware_qcom-caf_msm8996_display/
-│       ├── hardware_qcom-caf_wlan/
-│       ├── hardware_qcom_wlan/
-│       ├── kernel_configs/
-│       ├── packages_modules_Connectivity/
-│       └── system_memory_libmeminfo/
-├── build.sh                    # Full automated Crave / local build pipeline
-├── auto_patch.sh               # Standalone universal auto-patcher
-├── crave.yaml                  # One-click Crave DevSpace config
-└── README.md                   # Documentation and usage guide
-```
-
----
-
 ## 🚀 Building on Crave
 
 Run directly in Crave:
