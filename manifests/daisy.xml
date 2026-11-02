@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <!-- Remotes -->
+  <remote name="ximi" fetch="https://github.com/ximi-daisy" clone-depth="1" />
+  <remote name="linag" fetch="https://github.com/LineageOS" clone-depth="1" />
+
+  <!-- Xiaomi Mi A2 Lite (daisy) Device Trees -->
+  <project path="device/xiaomi/daisy" name="android_device_xiaomi_daisy" remote="ximi" revision="16.2" />
+  <project path="device/xiaomi/msm8953-common" name="android_device_xiaomi_msm8953-common" remote="ximi" revision="16.2" />
+
+  <!-- Proprietary Vendor Trees -->
+  <project path="vendor/xiaomi/daisy" name="proprietary_vendor_xiaomi_daisy" remote="ximi" revision="16" />
+  <project path="vendor/xiaomi/msm8953-common" name="proprietary_vendor_xiaomi_msm8953-common" remote="ximi" revision="16.2" />
+
+  <!-- Kernel Source Tree -->
+  <project path="kernel/xiaomi/msm8953" name="android_kernel_xiaomi_msm8953" remote="ximi" revision="lineage-23.2" />
+
+  <!-- Common Xiaomi Hardware Tree -->
+  <project path="hardware/xiaomi" name="android_hardware_xiaomi" remote="linag" revision="lineage-23.2" />
+  <project path="hardware/sony/timekeep" name="android_hardware_sony_timekeep" remote="linag" revision="lineage-23.2" />
+</manifest>

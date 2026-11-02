@@ -1,0 +1,9 @@
+# Build outputs & logs
+*.log
+*.log.gz
+out/
+.ccache/
+*.lock
+
+# Repo directories if cloned locally
+.repo/

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <remote name="frnAlt" fetch="https://github.com/frnAlt" clone-depth="1" />
+
+  <!-- Audio / Dolby / ViPER -->
+  <project path="packages/apps/ViPER4AndroidFX" name="vendor_viper4" remote="frnAlt" revision="v4a" />
+  <project path="hardware/dolby" name="hardware_dolby" remote="frnAlt" revision="sony-1.0" />
+
+  <!-- Datura Firewall -->
+  <project path="prebuilts/calyx/datura" name="prebuilts_calyx_datura" remote="frnAlt" revision="15-qpr2" />
+
+  <!-- Signing Keys -->
+  <project path="vendor/lineage-priv/keys" name="vendor_lineage-priv_keys" remote="frnAlt" revision="16.2" />
+</manifest>

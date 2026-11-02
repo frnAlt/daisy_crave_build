@@ -1,0 +1,8 @@
+# Crave DevSpace Build Configuration
+# Target: Xiaomi Mi A2 Lite (daisy) - Android 16 / LineageOS 23.2 / Lunaris OS 16.2
+apiVersion: v1
+kind: Build
+spec:
+  device: daisy
+  command: |
+    bash build.sh daisy
