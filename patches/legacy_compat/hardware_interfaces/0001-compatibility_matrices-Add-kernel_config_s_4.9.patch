@@ -1,0 +1,24 @@
+From 8fbb9060daf863b94166e69196284a8cbd56ca1c Mon Sep 17 00:00:00 2001
+From: KanadeAlt <enashinonome264@gmail.com>
+Date: Mon, 29 Sep 2025 19:31:52 +0000
+Subject: [PATCH 1/2] compatibility_matrices: Add kernel_config_s_4.9
+
+---
+ compatibility_matrices/Android.bp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/compatibility_matrices/Android.bp b/compatibility_matrices/Android.bp
+index 4490127..518ccf0 100644
+--- a/compatibility_matrices/Android.bp
++++ b/compatibility_matrices/Android.bp
+@@ -105,6 +105,7 @@ vintf_compatibility_matrix {
+         "compatibility_matrix.6.xml",
+     ],
+     kernel_configs: [
++        "kernel_config_s_4.9",
+         "kernel_config_s_4.14",
+         "kernel_config_s_4.19",
+         "kernel_config_s_5.4",
+-- 
+2.53.0.windows.1
+

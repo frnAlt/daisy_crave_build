@@ -1,0 +1,24 @@
+From 1e93d7166d8d9eb04b226ae6e8e3a179cdaa7f2f Mon Sep 17 00:00:00 2001
+From: KanadeAlt <enashinonome264@gmail.com>
+Date: Mon, 29 Sep 2025 15:56:07 -0400
+Subject: [PATCH 2/2] Restore q/android-4.9 again
+
+---
+ compatibility_matrices/Android.bp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/compatibility_matrices/Android.bp b/compatibility_matrices/Android.bp
+index 518ccf0..4d3a5b2 100644
+--- a/compatibility_matrices/Android.bp
++++ b/compatibility_matrices/Android.bp
+@@ -94,6 +94,7 @@ vintf_compatibility_matrix {
+         "compatibility_matrix.5.xml",
+     ],
+     kernel_configs: [
++        "kernel_config_q_4.9",
+         "kernel_config_r_5.4",
+     ],
+ }
+-- 
+2.53.0.windows.1
+

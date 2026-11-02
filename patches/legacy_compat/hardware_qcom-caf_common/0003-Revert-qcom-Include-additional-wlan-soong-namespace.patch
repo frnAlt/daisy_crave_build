@@ -1,0 +1,28 @@
+From d77bfa0b41bd67a78b6a8fefaf7658d5423cf9ef Mon Sep 17 00:00:00 2001
+From: KanadeAlt <enashinonome264@gmail.com>
+Date: Mon, 29 Sep 2025 19:47:15 +0000
+Subject: [PATCH 3/4] Revert "qcom: Include additional wlan soong namespace"
+
+This reverts commit b5edacbb0a9edb23c32b1d55935425afea13bcab.
+---
+ BoardConfigQcom.mk | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/BoardConfigQcom.mk b/BoardConfigQcom.mk
+index 00d9434..a17c378 100644
+--- a/BoardConfigQcom.mk
++++ b/BoardConfigQcom.mk
+@@ -463,9 +463,7 @@ else
+ endif
+ 
+ # Add wlan to PRODUCT_SOONG_NAMESPACES
+-PRODUCT_SOONG_NAMESPACES += \
+-    hardware/qcom-caf/wlan \
+-    hardware/qcom-caf/wlan/qcwcn
++PRODUCT_SOONG_NAMESPACES += hardware/qcom-caf/wlan
+ 
+ # Verified Boot
+ BOARD_AVB_SYSTEM_ADD_HASHTREE_FOOTER_ARGS += --hash_algorithm sha256
+-- 
+2.53.0.windows.1
+

@@ -1,8 +1,13 @@
-# Xiaomi Mi A2 Lite (daisy) - Custom ROM Build Manifests & Automated Build Pipeline
+# Universal ROM Crave Build Pipeline & Local Manifests for Xiaomi Mi A2 Lite (`daisy`)
 
-This repository provides an all-in-one, ready-to-build solution for compiling **Android 16 (LineageOS 23.2 / Lunaris OS 16.2)** for the **Xiaomi Mi A2 Lite (`daisy`)** on Qualcomm MSM8953 (Snapdragon 625).
+This repository provides an all-in-one, turnkey solution for compiling **Android 16 / LineageOS 23.2 / Lunaris OS / crDroid / Evolution X** for the **Xiaomi Mi A2 Lite (`daisy`)** on Qualcomm Snapdragon 625 (MSM8953).
 
-It integrates the complete trees and replacement recipes from [`ximi-daisy/daisy_manifests`](https://github.com/ximi-daisy/daisy_manifests), structured in the [`frnAlt`](https://github.com/frnAlt) manifest and build script architecture, with fully automated in-flight patching for all known Android 16 / MSM8953 compilation and runtime bugs.
+It combines:
+- Verified device, kernel, and proprietary vendor trees.
+- Legacy Qualcomm CAF MSM8996 display, audio, and media HALs.
+- Automatic bug fixes from [`ximi-daisy/daisy_manifests`](https://github.com/ximi-daisy/daisy_manifests), [`TheGamerKing561/local_manifests`](https://github.com/TheGamerKing561/local_manifests), and [`android_vendor_extra-daisy`](https://github.com/frnAlt/android_vendor_extra-daisy).
+- Fully automated in-flight patcher (`auto_patch.sh`) supporting all custom ROM variants.
+- Cloud-ready Crave build script (`build.sh`) with error handling, crash logging, and artifact uploading.
 
 ---
 
@@ -10,12 +15,12 @@ It integrates the complete trees and replacement recipes from [`ximi-daisy/daisy
 
 ```text
 .
-├── local_manifests.xml         # Unified local manifest for repo sync
+├── local_manifests.xml         # Unified universal local manifest
 ├── manifests/
-│   ├── daisy.xml               # Device, vendor, kernel, and hardware trees
-│   ├── los_replacements.xml    # Legacy MSM8953 CAF & LineageOS replacements/removals
+│   ├── daisy.xml               # Clean hardware, device, vendor, kernel trees
+│   ├── los_replacements.xml    # Replacements & removals for LineageOS/Lunaris builds
 │   └── extra_features.xml      # ViPER4AndroidFX, Dolby, Datura, and signing keys
-├── patches/                    # All 9 standalone bug-fix patches from ximi-daisy
+├── patches/
 │   ├── 0003-run-recovery-permissive.patch
 │   ├── 0004-sepolicy-allow-permissive-user.patch
 │   ├── 0005-systeminfo-skip-per-process-GPU.patch
@@ -24,47 +29,64 @@ It integrates the complete trees and replacement recipes from [`ximi-daisy/daisy
 │   ├── 0011-fw_n-kill-gpuwork.patch
 │   ├── 0012-setupwizard_skip.patch
 │   ├── 0013-microg_user_build_fix.patch
-│   └── 0017-packages_modules_Connectivity-no-BTF.patch
-├── build.sh                    # Full Crave / local automated build pipeline
-├── auto_patch.sh               # Standalone auto-patcher utility
-├── crave.yaml                  # Optional Crave DevSpace config
+│   ├── 0017-packages_modules_Connectivity-no-BTF.patch
+│   └── legacy_compat/          # Universal per-project patches for any ROM type
+│       ├── build_make/
+│       ├── frameworks_native/
+│       ├── hardware_interfaces/
+│       ├── hardware_qcom-caf_common/
+│       ├── hardware_qcom-caf_msm8996_audio/
+│       ├── hardware_qcom-caf_msm8996_display/
+│       ├── hardware_qcom-caf_wlan/
+│       ├── hardware_qcom_wlan/
+│       ├── kernel_configs/
+│       ├── packages_modules_Connectivity/
+│       └── system_memory_libmeminfo/
+├── build.sh                    # Full automated Crave / local build pipeline
+├── auto_patch.sh               # Standalone universal auto-patcher
+├── crave.yaml                  # One-click Crave DevSpace config
 └── README.md                   # Documentation and usage guide
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Building on Crave
 
-### 1. Build via Crave (Recommended)
-
-Run directly on Crave cloud builder:
+Run directly in Crave:
 
 ```bash
-crave run -- "git clone https://github.com/<your-username>/daisy_build_manifests.git /tmp/daisy_builder && bash /tmp/daisy_builder/build.sh daisy"
+crave run -- "git clone https://github.com/frnAlt/daisy_crave_build.git /tmp/daisy_builder && bash /tmp/daisy_builder/build.sh daisy"
 ```
 
-Or clone this repository into your Crave workspace and run:
+Or set custom ROM target:
 
 ```bash
-bash build.sh daisy
+# Example for LineageOS:
+crave run -- "git clone https://github.com/frnAlt/daisy_crave_build.git /tmp/daisy_builder && ROM_NAME='LineageOS' REPO_INIT_URL='https://github.com/LineageOS/android' REPO_INIT_BRANCH='lineage-23.2' bash /tmp/daisy_builder/build.sh daisy"
+
+# Example for Lunaris OS:
+crave run -- "git clone https://github.com/frnAlt/daisy_crave_build.git /tmp/daisy_builder && ROM_NAME='Lunaris OS' REPO_INIT_URL='https://github.com/Lunaris-AOSP/android' REPO_INIT_BRANCH='16.2' bash /tmp/daisy_builder/build.sh daisy"
+
+# Example for crDroid:
+crave run -- "git clone https://github.com/frnAlt/daisy_crave_build.git /tmp/daisy_builder && ROM_NAME='crDroid' REPO_INIT_URL='https://github.com/crdroidandroid/android' REPO_INIT_BRANCH='16.0' bash /tmp/daisy_builder/build.sh daisy"
 ```
 
-### 2. Build Locally / In an Existing Source Tree
+---
 
-If you already have your Android source initialized:
+## 💻 Building Locally
 
 ```bash
-# 1. Place the local manifest into your source tree:
+# 1. Place the local manifest into your source tree
 mkdir -p .repo/local_manifests/
 cp local_manifests.xml .repo/local_manifests/daisy.xml
 
-# 2. Sync the repositories:
+# 2. Sync sources
 repo sync -c --no-clone-bundle --no-tags --optimized-fetch --prune --force-sync -j$(nproc)
 
-# 3. Apply the automatic bug-fix patches:
+# 3. Apply all patches automatically
 bash auto_patch.sh
 
-# 4. Initialize build environment and compile:
+# 4. Compile
 source build/envsetup.sh
 lunch lineage_daisy-userdebug
 m bacon -j$(nproc)
@@ -74,50 +96,13 @@ m bacon -j$(nproc)
 
 ## 🛠️ Automated Bug Fixes Included
 
-The build pipeline and `auto_patch.sh` automatically detect and resolve legacy MSM8953 compatibility issues on Android 16:
-
-| # | Patch File | Target Component | Description & Root Cause |
-|---|------------|------------------|--------------------------|
-| **1** | `0003-run-recovery-permissive.patch` | `device/lineage/sepolicy` | Ensures recovery runs in permissive domain on `user` builds to prevent bootloader recovery bootloops. |
-| **2** | `0004-sepolicy-allow-permissive-user.patch` | `system/sepolicy` | Bypasses the Soong build assertion that rejects permissive domains on user builds. |
-| **3** | `0005-systeminfo-skip-per-process-GPU.patch` | `system/memory` (`libmeminfo`) | Prevents device crash and soft-reboot by skipping GPU memory BPF tracing if `CONFIG_TRACE_GPU_MEM` is not enabled in the kernel. |
-| **4** | `0006-remove-install-recovery.patch` | `build/make` (`releasetools`) | Removes redundant `install-recovery.sh` packaging on A/B devices to prevent OTA packaging errors. |
-| **5** | `0007-msm8996.patch` | `hardware/qcom-caf/msm8996` | Creates `Android.bp` (Soong namespace) and `Android.mk` so audio, display, and media HALs are parsed properly by Soong/Kati. |
-| **6** | `0011-fw_n-kill-gpuwork.patch` | `frameworks/native` | Disables GpuWork BPF features when running on pre-6.19 kernels (fixing crashes on legacy 3.18/4.9 kernels). |
-| **7** | `0012-setupwizard_skip.patch` | `packages/apps/SetupWizard` | Enables the "Skip" button in Lineage SetupWizard across all build variants (`user`, `userdebug`, `eng`). |
-| **8** | `0013-microg_user_build_fix.patch` | `frameworks/base` | Removes `isDebuggable()` check so microG signature spoofing works out-of-the-box on user builds. |
-| **9** | `0017-packages_modules_Connectivity-no-BTF.patch` | `packages/modules/Connectivity` | Adjusts `NetBpfLoad` BTF check from 4.19 to 5.15, avoiding fatal aborts on legacy kernels without BTF. |
-
----
-
-## 📦 Trees & Repositories Used
-
-All repositories are sourced from verified Android 16 / LineageOS 23.2 trees:
-
-- **Device Tree**: [`ximi-daisy/android_device_xiaomi_daisy`](https://github.com/ximi-daisy/android_device_xiaomi_daisy) (`16.2`)
-- **Common Device Tree**: [`ximi-daisy/android_device_xiaomi_msm8953-common`](https://github.com/ximi-daisy/android_device_xiaomi_msm8953-common) (`16.2`)
-- **Vendor Tree**: [`ximi-daisy/proprietary_vendor_xiaomi_daisy`](https://github.com/ximi-daisy/proprietary_vendor_xiaomi_daisy) (`16`)
-- **Common Vendor Tree**: [`ximi-daisy/proprietary_vendor_xiaomi_msm8953-common`](https://github.com/ximi-daisy/proprietary_vendor_xiaomi_msm8953-common) (`16.2`)
-- **Kernel Tree**: [`ximi-daisy/android_kernel_xiaomi_msm8953`](https://github.com/ximi-daisy/android_kernel_xiaomi_msm8953) (`lineage-23.2`)
-- **Hardware Xiaomi**: [`LineageOS/android_hardware_xiaomi`](https://github.com/LineageOS/android_hardware_xiaomi) (`lineage-23.2`)
-- **Hardware Sony Timekeep**: [`LineageOS/android_hardware_sony_timekeep`](https://github.com/LineageOS/android_hardware_sony_timekeep) (`lineage-23.2`)
-- **Tweaked Build System**: [`ximi-daisy/android_build`](https://github.com/ximi-daisy/android_build) (`lineage-23.2-tweaked`)
-- **Tweaked Interfaces**: [`ximi-daisy/android_hardware_interfaces`](https://github.com/ximi-daisy/android_hardware_interfaces) (`lineage-23.2-tweaked`)
-- **Tweaked WLAN HAL**: [`ximi-daisy/android_hardware_qcom_wlan`](https://github.com/ximi-daisy/android_hardware_qcom_wlan) (`lineage-23.2-tweaked` & `lineage-23.2-caf-tweaked`)
-- **Tweaked Connectivity**: [`ximi-daisy/android_packages_modules_Connectivity`](https://github.com/ximi-daisy/android_packages_modules_Connectivity) (`lineage-23.2-tweaked`)
-- **Tweaked BPF**: [`ximi-daisy/android_system_bpf`](https://github.com/ximi-daisy/android_system_bpf) (`lineage-23.2-tweaked`)
-- **Qualcomm 8996 Display/Audio/Media HALs**:
-  - `hardware/qcom-caf/msm8996/media`: [`LineageOS/android_hardware_qcom_media`](https://github.com/LineageOS/android_hardware_qcom_media) (`lineage-22.2-caf-msm8996`)
-  - `hardware/qcom-caf/msm8996/display`: [`ximi-daisy/android_hardware_qcom_display`](https://github.com/ximi-daisy/android_hardware_qcom_display) (`lineage-23.2-caf-msm8996`)
-  - `hardware/qcom-caf/msm8996/audio`: [`ximi-daisy/android_hardware_qcom_audio`](https://github.com/ximi-daisy/android_hardware_qcom_audio) (`lineage-23.2-caf-msm8996`)
-
----
-
-## ⚡ Build Script Features
-
-`build.sh` contains enterprise-grade pipeline features adapted from `frnAlt/Scripts`:
-- **Dual-Pipe Logging**: Live stdout in terminal while recording timestamped logs (`build_daisy_*.log`).
-- **Crash Log Uploads**: Automatically uploads `.log.gz` and `out/siso_failed_commands.sh` to Gofile (with Pixeldrain fallback) on build failure.
-- **OTA Metadata Generation**: Generates `${DEVICE}.json` with maintainer metadata, sha256, md5, and size for OTA updater support.
-- **Parallel Artifact Upload**: Uploads ROM zip, kernel partition images (`boot.img`, `recovery.img`, `dtbo.img`), and JSON metadata in parallel with direct master links.
-- **Fail-Safe Idempotence**: All patching and sanitization functions can be run repeatedly without breaking existing modifications.
+1. **Permissive Recovery**: Removes restriction on permissive domain for recovery in user builds (`device/lineage/sepolicy`).
+2. **Sepolicy Allow Permissive**: Bypasses Soong permissive check rejection on user builds (`system/sepolicy`).
+3. **GPU Memory Tracing Crash**: Skips BPF `/sys/fs/bpf/map_gpuMem_gpu_mem_total_map` tracing if disabled in kernel, eliminating soft-reboots on 3.18/4.9 kernels (`system/memory/libmeminfo`).
+4. **Remove `install-recovery.sh`**: Strips obsolete recovery flashing script during OTA package generation (`build/make`).
+5. **MSM8996 CAF Namespace**: Generates `Android.bp` and `Android.mk` for `hardware/qcom-caf/msm8996` HAL namespace.
+6. **Kill GpuWork on Legacy Kernels**: Disables BPF GpuWork features when running on pre-6.19 kernels (`frameworks/native`).
+7. **Skip SetupWizard**: Enables the skip button across all build flavors (`packages/apps/SetupWizard`).
+8. **MicroG Signature Spoofing**: Removes `isDebuggable()` check in `ComputerEngine.java` to support spoofing on user builds (`frameworks/base`).
+9. **NetBpfLoad BTF Compatibility**: Adjusts BTF minimum kernel requirement from 4.19 to 5.15 (`packages/modules/Connectivity`).
+10. **Legacy Compatibility Matrix & Kernel Configs**: Restores 4.9 and 4.4 configs and compatibility matrix for legacy device boot.

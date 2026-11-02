@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # ==============================================================================
-# Crave & Local Custom ROM Build Pipeline - LineageOS 23.2 / Lunaris OS (Android 16.2)
+# Crave & Local Custom ROM Build Pipeline - Android 16.2 (LineageOS / Lunaris / crDroid / AOSP)
 # Target Device: Xiaomi Mi A2 Lite (daisy) - Qualcomm MSM8953
-# Maintainer: @Parvez52 (frnAlt)
+# Maintainer: frnAlt
 # ==============================================================================
 
 # Ensure working directory is android root if executed inside Crave container
@@ -634,10 +634,11 @@ process_artifacts() {
           --arg url "$GH_DOWNLOAD_URL" \
           --arg ver "$ROM_VERSION" \
           --arg dev "$DEVICE" \
+          --arg maintainer "${MAINTAINER:-frnAlt}" \
           '{
             response: [
               {
-                maintainer: "@Parvez52",
+                maintainer: $maintainer,
                 currently_maintained: true,
                 oem: "Xiaomi",
                 device: $dev,
@@ -657,7 +658,7 @@ process_artifacts() {
 {
   "response": [
     {
-      "maintainer": "@Parvez52",
+      "maintainer": "${MAINTAINER:-frnAlt}",
       "currently_maintained": true,
       "oem": "Xiaomi",
       "device": "${DEVICE}",

@@ -1,0 +1,24 @@
+From 368373924e0dd165e8ec6eb598377b7338bb7685 Mon Sep 17 00:00:00 2001
+From: Bruno Martins <bgcngm@gmail.com>
+Date: Mon, 7 Mar 2022 14:30:54 +0000
+Subject: [PATCH 4/8] p/android-4.4: Bump min LTS version
+
+Kernel v4.4 has reached EOL, so step up and enforce the last version.
+Moreover, it's very likely that functional eBPF backports were applied
+over such a rather recent kernel base.
+
+Change-Id: Idc94b83bfc124fd48697de5c251149707480e881
+---
+ p/android-4.4/android-base-conditional.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/p/android-4.4/android-base-conditional.xml b/p/android-4.4/android-base-conditional.xml
+index 97931aa..6d4a555 100644
+--- a/p/android-4.4/android-base-conditional.xml
++++ b/p/android-4.4/android-base-conditional.xml
+@@ -1 +1 @@
+-<kernel minlts="4.4.107" />
++<kernel minlts="4.4.302" />
+-- 
+2.53.0.windows.1
+

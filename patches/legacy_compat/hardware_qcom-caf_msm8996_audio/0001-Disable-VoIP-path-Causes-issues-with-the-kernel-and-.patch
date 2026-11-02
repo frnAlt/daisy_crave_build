@@ -1,0 +1,33 @@
+From a800122cf33be7a8d30faa17ac224d09bb20cd0f Mon Sep 17 00:00:00 2001
+From: UDPSendToFailed <udpsendtofailed@gmail.com>
+Date: Wed, 11 Feb 2026 17:40:09 +0100
+Subject: [PATCH] Disable VoIP path Causes issues with the kernel and breaks
+ microphone input in apps like WhatsApp and Telegram during calls
+
+---
+ hal/audio_hw.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hal/audio_hw.c b/hal/audio_hw.c
+index 902daaf..dda596f 100644
+--- a/hal/audio_hw.c
++++ b/hal/audio_hw.c
+@@ -7308,6 +7308,7 @@ static int adev_update_voice_comm_input_stream(struct stream_in *in,
+     bool valid_ch = audio_channel_count_from_in_mask(in->channel_mask) == 1;
+ 
+ #ifndef COMPRESS_VOIP_ENABLED
++#if 0
+     if (valid_rate && valid_ch &&
+         (in->dev->mode == AUDIO_MODE_IN_COMMUNICATION ||
+          in->source == AUDIO_SOURCE_VOICE_COMMUNICATION)) {
+@@ -7321,6 +7322,7 @@ static int adev_update_voice_comm_input_stream(struct stream_in *in,
+                "sample rate %u, channel mask 0x%X",
+                __func__, config->sample_rate, in->channel_mask);
+     }
++#endif
+     in->config.rate = config->sample_rate;
+     in->sample_rate = config->sample_rate;
+ #else
+-- 
+2.53.0.windows.1
+

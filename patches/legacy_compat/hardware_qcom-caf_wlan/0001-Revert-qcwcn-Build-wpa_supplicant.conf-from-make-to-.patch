@@ -1,0 +1,108 @@
+From b0dbad2e431dc55132ab03dd4276736a41b0c182 Mon Sep 17 00:00:00 2001
+From: backslashxx <118538522+backslashxx@users.noreply.github.com>
+Date: Fri, 30 Jan 2026 18:01:21 +0800
+Subject: [PATCH] Revert "qcwcn: Build wpa_supplicant.conf from make to soong"
+
+This reverts commit 7f9322199834cb2335cd3e4843ec0cfeca9b3168.
+---
+ Android.mk              | 10 ++++++++++
+ qcwcn/Android.mk        |  6 ++++++
+ qcwcn/config/Android.bp | 23 -----------------------
+ qcwcn/config/Android.mk | 25 +++++++++++++++++++++++++
+ 4 files changed, 41 insertions(+), 23 deletions(-)
+ create mode 100644 Android.mk
+ create mode 100644 qcwcn/Android.mk
+ delete mode 100644 qcwcn/config/Android.bp
+ create mode 100644 qcwcn/config/Android.mk
+
+diff --git a/Android.mk b/Android.mk
+new file mode 100644
+index 0000000..3c542ca
+--- /dev/null
++++ b/Android.mk
+@@ -0,0 +1,10 @@
++ifeq ($(call my-dir),$(call project-path-for,qcom-wlan))
++
++# TODO:  Find a better way to separate build configs for ADP vs non-ADP devices
++QCOM_WLAN_ROOT := $(call my-dir)
++
++ifneq ($(BOARD_IS_AUTOMOTIVE),true)
++include $(call all-subdir-makefiles)
++endif
++
++endif
+diff --git a/qcwcn/Android.mk b/qcwcn/Android.mk
+new file mode 100644
+index 0000000..be3bb25
+--- /dev/null
++++ b/qcwcn/Android.mk
+@@ -0,0 +1,6 @@
++# adp8064 and fox box do not share wifi code
++ifeq ($(filter adp8064 fox,$(TARGET_DEVICE)),)
++  ifeq ($(BOARD_WLAN_DEVICE),qcwcn)
++    include $(call all-subdir-makefiles)
++  endif
++endif
+diff --git a/qcwcn/config/Android.bp b/qcwcn/config/Android.bp
+deleted file mode 100644
+index a0f4eb5..0000000
+--- a/qcwcn/config/Android.bp
++++ /dev/null
+@@ -1,23 +0,0 @@
+-// Copyright (C) 2008 The Android Open Source Project
+-//
+-// Licensed under the Apache License, Version 2.0 (the "License");
+-// you may not use this file except in compliance with the License.
+-// You may obtain a copy of the License at
+-//
+-//      http://www.apache.org/licenses/LICENSE-2.0
+-//
+-// Unless required by applicable law or agreed to in writing, software
+-// distributed under the License is distributed on an "AS IS" BASIS,
+-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-// See the License for the specific language governing permissions and
+-// limitations under the License.
+-
+-prebuilt_etc {
+-    name: "wpa_supplicant.conf",
+-    src: ":wpa_supplicant_conf_gen",
+-    sub_dir: "wifi",
+-    vendor: true,
+-    licenses: [
+-        "external_wpa_supplicant_8_license",
+-    ],
+-}
+diff --git a/qcwcn/config/Android.mk b/qcwcn/config/Android.mk
+new file mode 100644
+index 0000000..b99f4ac
+--- /dev/null
++++ b/qcwcn/config/Android.mk
+@@ -0,0 +1,25 @@
++#
++# Copyright (C) 2008 The Android Open Source Project
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#      http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++LOCAL_PATH := $(call my-dir)
++
++#########################
++
++WIFI_DRIVER_SOCKET_IFACE := wlan0
++ifeq ($(strip $(WPA_SUPPLICANT_VERSION)),VER_0_8_X)
++  FORCE_USE_ANDROIDMK_FOR_WPA_CONF := true
++  include external/wpa_supplicant_8/wpa_supplicant/wpa_supplicant_conf.mk
++endif
++#######################
+-- 
+2.53.0.windows.1
+

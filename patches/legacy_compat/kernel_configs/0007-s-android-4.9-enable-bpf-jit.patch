@@ -1,0 +1,25 @@
+From db03aaa28727e8fef87211e0973feef590ccdb1a Mon Sep 17 00:00:00 2001
+From: 0xKANARIA <enashinonome264@gmail.com>
+Date: Mon, 15 Sep 2025 05:57:20 +0000
+Subject: [PATCH 7/8] s/android-4.9: enable bpf jit
+
+---
+ s/android-4.9/android-base.config | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/s/android-4.9/android-base.config b/s/android-4.9/android-base.config
+index 0b102a6..cd2e3e5 100644
+--- a/s/android-4.9/android-base.config
++++ b/s/android-4.9/android-base.config
+@@ -21,7 +21,7 @@ CONFIG_BLK_DEV_INITRD=y
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLOCK=y
+ CONFIG_BPF_SYSCALL=y
+-CONFIG_BPF_JIT
++CONFIG_BPF_JIT=y
+ CONFIG_CC_STACKPROTECTOR_STRONG=y
+ CONFIG_CGROUPS=y
+ CONFIG_CGROUP_BPF=y
+-- 
+2.53.0.windows.1
+

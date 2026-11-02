@@ -1,0 +1,316 @@
+From 5f4b3f4cc49a3ddc7b62f3c2daa5eda2d74b3f75 Mon Sep 17 00:00:00 2001
+From: UDPSendToFailed <udpsendtofailed@gmail.com>
+Date: Fri, 27 Feb 2026 20:05:27 +0100
+Subject: [PATCH] Make this thing actually use hardware compositing
+
+Change-Id: Id0f8c7fbeacec5e4437bbb649bb8cb07dade8f66
+---
+ sdm/include/utils/constants.h         |  6 +--
+ sdm/libs/core/comp_manager.cpp        | 20 ++++-----
+ sdm/libs/core/strategy.cpp            |  2 +-
+ sdm/libs/hwc2/hwc_display.cpp         | 26 ++++-------
+ sdm/libs/hwc2/hwc_display_primary.cpp |  9 ++--
+ sdm/libs/hwc2/hwc_layers.cpp          | 64 ++++++---------------------
+ sdm/libs/hwc2/hwc_layers.h            |  1 +
+ 7 files changed, 41 insertions(+), 87 deletions(-)
+
+diff --git a/sdm/include/utils/constants.h b/sdm/include/utils/constants.h
+index 5efe357..9f13ad0 100644
+--- a/sdm/include/utils/constants.h
++++ b/sdm/include/utils/constants.h
+@@ -47,9 +47,9 @@
+ #define ROUND_UP_ALIGN_DOWN(value, a) FLOAT(FloorToMultipleOf(UINT32(value + 0.5f), UINT32(a)))
+ #define ROUND_UP_ALIGN_UP(value, a) FLOAT(CeilToMultipleOf(UINT32(value + 0.5f), UINT32(a)))
+ 
+-#define IDLE_TIMEOUT_DEFAULT_MS 70
+-#define IDLE_TIMEOUT_ACTIVE_MS IDLE_TIMEOUT_DEFAULT_MS
+-#define IDLE_TIMEOUT_INACTIVE_MS 520
++#define IDLE_TIMEOUT_DEFAULT_MS 250
++#define IDLE_TIMEOUT_ACTIVE_MS 250
++#define IDLE_TIMEOUT_INACTIVE_MS 1500
+ 
+ #define IS_RGB_FORMAT(format) (((format) < kFormatYCbCr420Planar) ? true: false)
+ 
+diff --git a/sdm/libs/core/comp_manager.cpp b/sdm/libs/core/comp_manager.cpp
+index 6dccf60..f8cf5f5 100644
+--- a/sdm/libs/core/comp_manager.cpp
++++ b/sdm/libs/core/comp_manager.cpp
+@@ -261,7 +261,7 @@ void CompManager::PrepareStrategyConstraints(Handle comp_handle, HWLayers *hw_la
+       hw_layers->info.stack->flags.skip_present = 1;
+       for(auto &layer : hw_layers->info.stack->layers) {
+         if(layer->composition != kCompositionGPUTarget) {
+-          layer->flags.skip = 1;
++          //layer->flags.skip = 1;
+         }
+       }
+     } else if (secure_external_transition_) {
+@@ -444,7 +444,9 @@ void CompManager::ProcessIdleTimeout(Handle display_ctx) {
+     return;
+   }
+ 
+-  display_comp_ctx->idle_fallback = true;
++  // Disabled: idle fallback to GPU causes jank on Adreno 506.
++  // SDE composition is always preferred.
++  // display_comp_ctx->idle_fallback = true;
+ }
+ 
+ void CompManager::ProcessThermalEvent(Handle display_ctx, int64_t thermal_level) {
+@@ -453,11 +455,9 @@ void CompManager::ProcessThermalEvent(Handle display_ctx, int64_t thermal_level)
+   DisplayCompositionContext *display_comp_ctx =
+           reinterpret_cast<DisplayCompositionContext *>(display_ctx);
+ 
+-  if (thermal_level >= kMaxThermalLevel) {
+-    display_comp_ctx->thermal_fallback_ = true;
+-  } else {
+-    display_comp_ctx->thermal_fallback_ = false;
+-  }
++  // Disabled: thermal fallback to GPU causes more heat than
++  // SDE composition on msm8953. SDE is always more efficient.
++  display_comp_ctx->thermal_fallback_ = false;
+ }
+ 
+ void CompManager::ProcessIdlePowerCollapse(Handle display_ctx) {
+@@ -595,10 +595,8 @@ bool CompManager::SetDisplayState(Handle display_ctx,
+     break;
+ 
+   case kStateOn:
+-    if (registered_displays_.count() > 1) {
+-      safe_mode_ = true;
+-      DLOGV_IF(kTagCompManager, "safe_mode = %d", safe_mode_);
+-    }
++    // Don't trigger safe_mode on display state change.
++    // SDE composition should be maintained through transitions.
+     break;
+ 
+   default:
+diff --git a/sdm/libs/core/strategy.cpp b/sdm/libs/core/strategy.cpp
+index 1dc26d2..e4edf36 100644
+--- a/sdm/libs/core/strategy.cpp
++++ b/sdm/libs/core/strategy.cpp
+@@ -128,7 +128,7 @@ DisplayError Strategy::GetNextStrategy(StrategyConstraints *constraints) {
+   // programming the hardware.
+   LayerStack *layer_stack = hw_layers_info_->stack;
+   for (uint32_t i = 0; i < hw_layers_info_->app_layer_count; i++) {
+-    layer_stack->layers.at(i)->composition = kCompositionGPU;
++    layer_stack->layers.at(i)->composition = kCompositionSDE;
+     layer_stack->layers.at(i)->request.flags.request_flags = 0;  // Reset layer request
+   }
+ 
+diff --git a/sdm/libs/hwc2/hwc_display.cpp b/sdm/libs/hwc2/hwc_display.cpp
+index 21688fd..1e90981 100644
+--- a/sdm/libs/hwc2/hwc_display.cpp
++++ b/sdm/libs/hwc2/hwc_display.cpp
+@@ -478,15 +478,15 @@ void HWCDisplay::BuildLayerStack() {
+ 
+     if (!hwc_layer->ValidateAndSetCSC()) {
+ #ifdef FEATURE_WIDE_COLOR
+-      layer->flags.skip = true;
++      //layer->flags.skip = true;
+ #endif
+     }
+ 
+     working_primaries = WidestPrimaries(working_primaries,
+                                         layer->input_buffer.color_metadata.colorPrimaries);
+ 
+-    // set default composition as GPU for SDM
+-    layer->composition = kCompositionGPU;
++    // set default composition as SDE for SDM — prefer hardware composition
++    layer->composition = kCompositionSDE;
+ 
+     if (swap_interval_zero_) {
+       if (layer->input_buffer.acquire_fence_fd >= 0) {
+@@ -535,7 +535,7 @@ void HWCDisplay::BuildLayerStack() {
+ 
+     if (hwc_layer->IsNonIntegralSourceCrop() && !is_secure && !hdr_layer &&
+         !layer->flags.single_buffer && !layer->flags.solid_fill) {
+-      layer->flags.skip = true;
++      //layer->flags.skip = true;
+     }
+ 
+     if (layer->flags.skip) {
+@@ -572,10 +572,7 @@ void HWCDisplay::BuildLayerStack() {
+     display_rect_ = Union(display_rect_, layer->dst_rect);
+     geometry_changes_ |= hwc_layer->GetGeometryChanges();
+ 
+-    layer->flags.updating = true;
+-    if (layer_set_.size() <= kMaxLayerCount) {
+-      layer->flags.updating = IsLayerUpdating(layer);
+-    }
++    layer->flags.updating = IsLayerUpdating(layer);
+ 
+     layer_stack_.layers.push_back(layer);
+   }
+@@ -586,7 +583,7 @@ void HWCDisplay::BuildLayerStack() {
+     auto layer = hwc_layer->GetSDMLayer();
+     if (layer->input_buffer.color_metadata.colorPrimaries != working_primaries &&
+         !hwc_layer->SupportLocalConversion(working_primaries)) {
+-      layer->flags.skip = true;
++      //layer->flags.skip = true;
+     }
+     if (layer->flags.skip) {
+       layer_stack_.flags.skip_present = true;
+@@ -605,8 +602,9 @@ void HWCDisplay::BuildLayerStack() {
+   // TODO(user): clarify the behaviour from Client(SF) and SDM Extn -
+   // when handling 10bit FBT, as it would affect blending
+   if (Is10BitFormat(sdm_client_target->input_buffer.format)) {
+-    // Must fall back to client composition
+-    MarkLayersForClientComposition();
++    // Don't force GPU fallback for 10-bit FBT on msm8953.
++    // SDE can handle the layer stack directly.
++    DLOGW("10-bit FBT detected but SDE composition preferred");
+   }
+ 
+   // set secure display
+@@ -2025,12 +2023,6 @@ std::string HWCDisplay::Dump() {
+ }
+ 
+ bool HWCDisplay::CanSkipValidate() {
+-  // Layer Stack checks
+-  if (layer_stack_.flags.hdr_present && (tone_mapper_ && tone_mapper_->IsActive())) {
+-    DLOGV_IF(kTagClient, "HDR content present with tone mapping enabled. Returning false.");
+-    return false;
+-  }
+-
+   if (client_target_->NeedsValidation()) {
+     DLOGV_IF(kTagClient, "Framebuffer target needs validation. Returning false.");
+     return false;
+diff --git a/sdm/libs/hwc2/hwc_display_primary.cpp b/sdm/libs/hwc2/hwc_display_primary.cpp
+index 1c215a4..dd0ce5f 100644
+--- a/sdm/libs/hwc2/hwc_display_primary.cpp
++++ b/sdm/libs/hwc2/hwc_display_primary.cpp
+@@ -177,8 +177,9 @@ HWC2::Error HWCDisplayPrimary::Validate(uint32_t *out_num_types, uint32_t *out_n
+   BuildLayerStack();
+ 
+   if (color_tranform_failed_) {
+-    // Must fall back to client composition
+-    MarkLayersForClientComposition();
++    // Color transform failed but SDE composition preferred.
++    // Individual layers handled by strategy extension.
++    DLOGW("Color transform failed but SDE composition preferred");
+   }
+ 
+   // Checks and replaces layer stack for solid fill
+@@ -428,8 +429,8 @@ uint32_t HWCDisplayPrimary::GetOptimalRefreshRate(bool one_updating_layer) {
+ DisplayError HWCDisplayPrimary::Refresh() {
+   DisplayError error = kErrorNone;
+ 
+-  callbacks_->Refresh(HWC_DISPLAY_PRIMARY);
+-  handle_idle_timeout_ = true;
++  // Idle timeout refresh suppressed: SDE composition is maintained,
++  // no need to re-validate an unchanged layer stack.
+ 
+   return error;
+ }
+diff --git a/sdm/libs/hwc2/hwc_layers.cpp b/sdm/libs/hwc2/hwc_layers.cpp
+index 0d39d45..23b141e 100644
+--- a/sdm/libs/hwc2/hwc_layers.cpp
++++ b/sdm/libs/hwc2/hwc_layers.cpp
+@@ -203,9 +203,12 @@ HWC2::Error HWCLayer::SetLayerBuffer(buffer_handle_t buffer, int32_t acquire_fen
+   // This works around bug 30281222
+   if (handle->fd < 0) {
+     return HWC2::Error::BadParameter;
+-  } else {
++  } else if (handle->id != last_buffer_id_) {
++    // Only dup when the actual Gralloc buffer changes (tracked by unique ID).
++    // Avoids 2 syscalls per frame for static layers that resubmit the same buffer.
+     close(ion_fd_);
+     ion_fd_ = dup(handle->fd);
++    last_buffer_id_ = handle->id;
+   }
+ 
+   LayerBuffer *layer_buffer = &layer_->input_buffer;
+@@ -257,19 +260,9 @@ HWC2::Error HWCLayer::SetLayerBuffer(buffer_handle_t buffer, int32_t acquire_fen
+ }
+ 
+ HWC2::Error HWCLayer::SetLayerSurfaceDamage(hwc_region_t damage) {
+-  // Check if there is an update in SurfaceDamage rects
+-  if (layer_->dirty_regions.size() != damage.numRects) {
+-    needs_validate_ = true;
+-  } else {
+-    for (uint32_t j = 0; j < damage.numRects; j++) {
+-      LayerRect damage_rect;
+-      SetRect(damage.rects[j], &damage_rect);
+-      if (damage_rect != layer_->dirty_regions.at(j)) {
+-        needs_validate_ = true;
+-        break;
+-      }
+-    }
+-  }
++  // Surface damage changes don't affect composition strategy.
++  // Damage rects only inform the MDP which regions to update,
++  // not which pipes to use. Skip validate trigger.
+ 
+   layer_->dirty_regions.clear();
+   for (uint32_t i = 0; i < damage.numRects; i++) {
+@@ -666,6 +659,12 @@ LayerBufferS3DFormat HWCLayer::GetS3DFormat(uint32_t s3d_format) {
+ }
+ 
+ DisplayError HWCLayer::SetMetaData(const private_handle_t *pvt_handle, Layer *layer) {
++  // Fast path: skip metadata queries for non-video UI layers.
++  // Only video buffers carry meaningful IGC/refresh/interlace/S3D metadata.
++  if (pvt_handle->buffer_type != BUFFER_TYPE_VIDEO) {
++    return kErrorNone;
++  }
++
+   LayerBuffer *layer_buffer = &layer->input_buffer;
+   private_handle_t *handle = const_cast<private_handle_t *>(pvt_handle);
+   IGC_t igc = {};
+@@ -737,43 +736,6 @@ bool HWCLayer::SupportLocalConversion(ColorPrimaries working_primaries) {
+ }
+ 
+ bool HWCLayer::ValidateAndSetCSC() {
+-  if (client_requested_ != HWC2::Composition::Device &&
+-      client_requested_ != HWC2::Composition::Cursor) {
+-    // Check the layers which are configured to Device
+-    return true;
+-  }
+-
+-  LayerBuffer *layer_buffer = &layer_->input_buffer;
+-  bool use_color_metadata = true;
+-#ifdef FEATURE_WIDE_COLOR
+-  ColorMetaData csc = {};
+-  if (dataspace_ != HAL_DATASPACE_UNKNOWN) {
+-    use_color_metadata = false;
+-    bool valid_csc = GetSDMColorSpace(dataspace_, &csc);
+-    if (!valid_csc) {
+-      return false;
+-    }
+-    // if we are here here, update the sdm layer csc.
+-    layer_buffer->color_metadata.transfer = csc.transfer;
+-    layer_buffer->color_metadata.colorPrimaries = csc.colorPrimaries;
+-    layer_buffer->color_metadata.range = csc.range;
+-  }
+-#endif
+-
+-  if (IsBT2020(layer_buffer->color_metadata.colorPrimaries)) {
+-     // android_dataspace_t doesnt support mastering display and light levels
+-     // so retrieve it from metadata for BT2020(HDR)
+-     use_color_metadata = true;
+-  }
+-
+-  if (use_color_metadata) {
+-    const private_handle_t *handle =
+-      reinterpret_cast<const private_handle_t *>(layer_buffer->buffer_id);
+-    if (sdm::SetCSC(handle, &layer_buffer->color_metadata) != kErrorNone) {
+-      return false;
+-    }
+-  }
+-
+   return true;
+ }
+ 
+diff --git a/sdm/libs/hwc2/hwc_layers.h b/sdm/libs/hwc2/hwc_layers.h
+index 1d12778..3bcab1e 100644
+--- a/sdm/libs/hwc2/hwc_layers.h
++++ b/sdm/libs/hwc2/hwc_layers.h
+@@ -107,6 +107,7 @@ class HWCLayer {
+   int32_t dataspace_ =  HAL_DATASPACE_UNKNOWN;
+   bool needs_validate_ = true;
+   bool non_integral_source_crop_ = false;
++  uint64_t last_buffer_id_ = 0;
+ 
+   // Composition requested by client(SF)
+   HWC2::Composition client_requested_ = HWC2::Composition::Device;
+-- 
+2.53.0.windows.1
+
