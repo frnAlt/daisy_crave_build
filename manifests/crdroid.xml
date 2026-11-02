@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <remote name="github" fetch="https://github.com" clone-depth="1" />
+
+  <!-- Upstream Removals -->
+  <remove-project path="prebuilts/clang/host/darwin-x86" />
+  <remove-project path="prebuilts/go/darwin-x86" />
+
+  <!-- Hardware Trees -->
+  <project path="hardware/qcom-caf/msm8996/audio" name="LineageOS/android_hardware_qcom_audio" remote="github" revision="lineage-22.2-caf-msm8996" />
+  <project path="hardware/qcom-caf/msm8996/display" name="LineageOS/android_hardware_qcom_display" remote="github" revision="lineage-22.2-caf-msm8996" />
+  <project path="hardware/qcom-caf/msm8996/media" name="LineageOS/android_hardware_qcom_media" remote="github" revision="lineage-22.2-caf-msm8996" />
+  <project path="hardware/sony/timekeep" name="LineageOS/android_hardware_sony_timekeep" remote="github" revision="lineage-23.2" clone-depth="100" />
+  <project path="hardware/xiaomi" name="LineageOS/android_hardware_xiaomi" remote="github" revision="lineage-23.2" clone-depth="100" />
+
+  <!-- Device Trees -->
+  <project path="device/xiaomi/msm8953-common" name="frnAlt/android_device_xiaomi_msm8953-common" remote="github" revision="16.2" />
+  <project path="device/xiaomi/daisy" name="frnAlt/android_device_xiaomi_daisy" remote="github" revision="16.2" />
+
+  <!-- Vendor Trees -->
+  <project path="vendor/xiaomi/msm8953-common" name="frnAlt/proprietary_vendor_xiaomi_msm8953-common" remote="github" revision="16.2" />
+  <project path="vendor/xiaomi/daisy" name="frnAlt/proprietary_vendor_xiaomi_daisy" remote="github" revision="16" />
+  <project path="vendor/fingerprint/opensource/interfaces" name="frnAlt/android_vendor_fingerprint_opensource_interfaces" remote="github" revision="lineage-21" />
+
+  <!-- Vendor Extra Patches for crDroid 12 / Android 16 & Pixel Clocks -->
+  <project path="vendor/extra" name="frnAlt/android_vendor_extra-daisy" remote="github" revision="crdroid-12" clone-depth="100" />
+  <project path="vendor/pixel_clocks" name="Positron-B/android_vendor_pixel_clocks" remote="github" />
+
+  <!-- Kernel Source -->
+  <project path="kernel/xiaomi/msm8953" name="frnAlt/android_kernel_xiaomi_msm8953" remote="github" revision="lineage-23.2" clone-depth="50" />
+</manifest>
