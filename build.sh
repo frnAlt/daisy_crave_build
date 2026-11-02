@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# Crave & Local Custom ROM Build Pipeline - Android 16.2 (LineageOS / Lunaris / crDroid / AOSP)
+# Crave & Local Custom ROM Build Pipeline - Android 16.2 / LineageOS 23.2
 # Target Device: Xiaomi Mi A2 Lite (daisy) - Qualcomm MSM8953
 # Maintainer: frnAlt
 # ==============================================================================
@@ -55,7 +55,7 @@ handle_error() {
     echo "============================================================"
     echo "❌ [ERROR] Build failed on line ${FAILED_LINE}"
     echo "❌ [ERROR] Target Device: ${DEVICE_NAME:-${DEVICE}}"
-    echo "❌ [ERROR] ROM:           ${ROM_NAME:-Lunaris OS}"
+    echo "❌ [ERROR] ROM:           ${ROM_NAME:-LineageOS}"
 
     local END_TIME=$(date +%s)
     local ELAPSED_SECONDS=$((END_TIME - START_TIME))
@@ -173,13 +173,13 @@ echo "[INFO] Configuring build pipeline for Xiaomi Mi A2 Lite (daisy)..."
 echo "============================================================"
 
 DEVICE_NAME="Xiaomi Mi A2 Lite (daisy)"
-ROM_NAME="${ROM_NAME:-Lunaris OS}"
+ROM_NAME="${ROM_NAME:-LineageOS}"
 ANDROID_VERSION="16.2"
-ROM_VERSION="3.12"
-GH_REPO="${GH_REPO:-frnAlt/Lunaris_daisy}"
+ROM_VERSION="${ROM_VERSION:-lineage-23.2}"
+GH_REPO="${GH_REPO:-frnAlt/daisy_crave_build}"
 
-REPO_INIT_URL="${REPO_INIT_URL:-https://github.com/Lunaris-AOSP/android}"
-REPO_INIT_BRANCH="${REPO_INIT_BRANCH:-16.2}"
+REPO_INIT_URL="${REPO_INIT_URL:-https://github.com/LineageOS/android}"
+REPO_INIT_BRANCH="${REPO_INIT_BRANCH:-lineage-23.2}"
 LOCAL_MANIFEST_URL="${LOCAL_MANIFEST_URL:-}"
 LOCAL_MANIFEST_BRANCH="${LOCAL_MANIFEST_BRANCH:-main}"
 BUILD_TARGET="${BUILD_TARGET:-lineage_${DEVICE}-userdebug}"
@@ -205,16 +205,9 @@ auto_patch_manifests() {
         for xml_file in .repo/local_manifests/*.xml; do
             [ -f "$xml_file" ] || continue
 
-            # Remove conflicting vendor/lunaris-priv/keys if present
-            if grep -q "vendor/lunaris-priv/keys" "$xml_file"; then
-                echo "[AUTO-FIX] Removing conflicting 'vendor/lunaris-priv/keys' from $xml_file"
-                sed -i '/vendor\/lunaris-priv\/keys/d' "$xml_file"
-            fi
-
-            # Eliminate HTTP 301 for renamed ViPER4AndroidFX repo
-            if grep -q "packages_apps_ViPER4AndroidFX" "$xml_file"; then
-                echo "[AUTO-FIX] Updating ViPER4AndroidFX repo target in $xml_file"
-                sed -i 's/name="packages_apps_ViPER4AndroidFX"/name="vendor_viper4"/g' "$xml_file"
+            # Ensure Darwin prebuilts are removed to save bandwidth on Linux/Crave
+            if ! grep -q "prebuilts/clang/host/darwin-x86" "$xml_file"; then
+                sed -i '/<manifest>/a \  <remove-project path="prebuilts/clang/host/darwin-x86" />\n  <remove-project path="prebuilts/go/darwin-x86" />' "$xml_file" 2>/dev/null || true
             fi
         done
     fi
@@ -223,54 +216,11 @@ auto_patch_manifests() {
 auto_clean_workspace() {
     echo "[INFO] Sanitizing workspace for clean compilation..."
 
-    # Prune stale vendor/lunaris-priv directory from persistent Crave cache
-    if [ -d "vendor/lunaris-priv" ]; then
-        echo "[AUTO-FIX] Removing stale directory: vendor/lunaris-priv"
-        rm -rf "vendor/lunaris-priv"
-    fi
-    rm -rf .repo/projects/vendor/lunaris-priv* 2>/dev/null || true
-
     # Clear stale git lock files from aborted runs
     find .repo/ -name "*.lock" -type f -delete 2>/dev/null || true
 
     # Invalidate corrupted Soong ninja files
     rm -f out/soong/build.*.ninja out/.module_paths/Android.bp.list 2>/dev/null || true
-
-    # Reset ViPER4AndroidFX git tracking state if desynchronized
-    if [ -d "packages/apps/ViPER4AndroidFX" ]; then
-        git -C "packages/apps/ViPER4AndroidFX" reset --hard HEAD 2>/dev/null || true
-    fi
-
-    # Ensure frameworks/base is synchronized to upstream 16.2
-    if [ -d "frameworks/base" ]; then
-        if [ ! -f "frameworks/base/packages/SystemUI/clockmaker/Android.bp" ] || [ ! -f "frameworks/base/packages/SystemUI/lockscreenwidgets/Android.bp" ]; then
-            echo "[AUTO-FIX] frameworks/base is missing clockmaker/lockscreenwidgets! Syncing to origin/16.2..."
-            git -C "frameworks/base" fetch origin 16.2 --depth=1 2>/dev/null || git -C "frameworks/base" fetch origin 16.2 2>/dev/null || true
-            git -C "frameworks/base" checkout -B 16.2 FETCH_HEAD 2>/dev/null || git -C "frameworks/base" reset --hard origin/16.2 2>/dev/null || true
-            git -C "frameworks/base" clean -fdx 2>/dev/null || true
-        fi
-    fi
-
-    # Sanitize vendor/lineage/config/lunaris.mk if packages are missing
-    if [ -f "vendor/lineage/config/lunaris.mk" ]; then
-        echo "[AUTO-FIX] Sanitizing vendor/lineage/config/lunaris.mk..."
-        sed -i '/# Skip AppDataBackup on Pixel devices/,/endif/d' vendor/lineage/config/lunaris.mk 2>/dev/null || true
-        sed -i '/AppDataBackup/d' vendor/lineage/config/lunaris.mk 2>/dev/null || true
-
-        if [ ! -f "frameworks/base/packages/SystemUI/clockmaker/Android.bp" ] || [ ! -f "frameworks/base/packages/SystemUI/lockscreenwidgets/Android.bp" ]; then
-            echo "[AUTO-FIX] Purging packages/apps/LockStyles due to missing dependencies..."
-            rm -rf "packages/apps/LockStyles"
-            sed -i '/LunarisLockStyles/d' vendor/lineage/config/lunaris.mk 2>/dev/null || true
-        fi
-
-        if [ ! -d "packages/apps/LunarisMonet" ]; then
-            sed -i '/LunarisMonet/d' vendor/lineage/config/lunaris.mk 2>/dev/null || true
-        fi
-        if [ ! -d "packages/apps/OptimizationEngine" ]; then
-            sed -i '/OptimizationEngine/d' vendor/lineage/config/lunaris.mk 2>/dev/null || true
-            sed -i 's/OmniStyle[[:space:]]*\\/OmniStyle/' vendor/lineage/config/lunaris.mk 2>/dev/null || true
-        fi
-    fi
 }
 
 # ==============================================================================
@@ -585,7 +535,7 @@ process_artifacts() {
     echo "============================================================"
 
     TARGET_DIR="out/target/product/${DEVICE}"
-    ROM_ZIP=$(ls -t ${TARGET_DIR}/Lunaris*${DEVICE}*.zip ${TARGET_DIR}/lineage*${DEVICE}*.zip ${TARGET_DIR}/*${DEVICE}*.zip 2>/dev/null | grep -v "target_files" | grep -v "ota" | head -n 1 || true)
+    ROM_ZIP=$(ls -t ${TARGET_DIR}/lineage*${DEVICE}*.zip ${TARGET_DIR}/*${DEVICE}*.zip 2>/dev/null | grep -v "target_files" | grep -v "ota" | head -n 1 || true)
     FILES_TO_UPLOAD=()
 
     if [ -z "$ROM_ZIP" ] || [ ! -f "$ROM_ZIP" ]; then

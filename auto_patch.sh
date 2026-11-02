@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # Universal Auto-Patch & Bug-Fix Routine for Xiaomi Mi A2 Lite (daisy)
-# Android 16 / LineageOS 23.2 / Lunaris OS / crDroid / Evolution X / AOSP (msm8953)
+# Android 16 / LineageOS 23.2 (daisy - msm8953)
 # ==============================================================================
 
 set -e

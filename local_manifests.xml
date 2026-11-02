@@ -82,11 +82,4 @@
   <project path="packages/modules/Connectivity" name="ximi-daisy/android_packages_modules_Connectivity" remote="github" revision="lineage-23.2-tweaked" />
   <project path="system/bpf" name="ximi-daisy/android_system_bpf" remote="github" revision="lineage-23.2-tweaked" />
 
-  <!-- ============================================================ -->
-  <!-- Audio / Dolby / Enhancements / Signing Keys                 -->
-  <!-- ============================================================ -->
-  <project path="packages/apps/ViPER4AndroidFX" name="frnAlt/vendor_viper4" remote="github" revision="v4a" />
-  <project path="hardware/dolby" name="frnAlt/hardware_dolby" remote="github" revision="sony-1.0" />
-  <project path="prebuilts/calyx/datura" name="frnAlt/prebuilts_calyx_datura" remote="github" revision="15-qpr2" />
-  <project path="vendor/lineage-priv/keys" name="frnAlt/vendor_lineage-priv_keys" remote="github" revision="16.2" />
 </manifest>
