@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# Crave & Local Custom ROM Build Pipeline - Android 16.2 / LineageOS 23.2
+# Crave & Local Custom ROM Build Pipeline - crDroid 12 (Android 16.0)
 # Target Device: Xiaomi Mi A2 Lite (daisy) - Qualcomm MSM8953
 # Maintainer: frnAlt
 # ==============================================================================
@@ -13,7 +13,7 @@ fi
 
 DEVICE=${1:-"daisy"}
 START_TIME=$(date +%s)
-LOG_FILE="build_${DEVICE}_$(date +%Y%m%d_%H%M).log"
+LOG_FILE="build_crdroid_${DEVICE}_$(date +%Y%m%d_%H%M).log"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 rm -f "/tmp/build_failed.lock"
@@ -55,7 +55,7 @@ handle_error() {
     echo "============================================================"
     echo "❌ [ERROR] Build failed on line ${FAILED_LINE}"
     echo "❌ [ERROR] Target Device: ${DEVICE_NAME:-${DEVICE}}"
-    echo "❌ [ERROR] ROM:           ${ROM_NAME:-LineageOS}"
+    echo "❌ [ERROR] ROM:           ${ROM_NAME:-crDroid}"
 
     local END_TIME=$(date +%s)
     local ELAPSED_SECONDS=$((END_TIME - START_TIME))
@@ -166,31 +166,31 @@ install_prerequisites() {
 }
 
 # ==============================================================================
-# Target Configuration for Xiaomi Mi A2 Lite (daisy)
+# Target Configuration for Xiaomi Mi A2 Lite (daisy) - crDroid 12
 # ==============================================================================
 echo "============================================================"
-echo "[INFO] Configuring build pipeline for Xiaomi Mi A2 Lite (daisy)..."
+echo "[INFO] Configuring build pipeline for crDroid 12 (daisy)..."
 echo "============================================================"
 
 DEVICE_NAME="Xiaomi Mi A2 Lite (daisy)"
-ROM_NAME="${ROM_NAME:-LineageOS}"
-ANDROID_VERSION="16.2"
-ROM_VERSION="${ROM_VERSION:-lineage-23.2}"
-GH_REPO="${GH_REPO:-frnAlt/daisy_crave_build}"
+ROM_NAME="crDroid"
+ANDROID_VERSION="16.0"
+ROM_VERSION="12.0"
+GH_REPO="${GH_REPO:-frnAlt/crdroid_daisy}"
 
-REPO_INIT_URL="${REPO_INIT_URL:-https://github.com/LineageOS/android}"
-REPO_INIT_BRANCH="${REPO_INIT_BRANCH:-lineage-23.2}"
+REPO_INIT_URL="${REPO_INIT_URL:-https://github.com/crdroidandroid/android}"
+REPO_INIT_BRANCH="${REPO_INIT_BRANCH:-16.0}"
 LOCAL_MANIFEST_URL="${LOCAL_MANIFEST_URL:-}"
-LOCAL_MANIFEST_BRANCH="${LOCAL_MANIFEST_BRANCH:-main}"
-BUILD_TARGET="${BUILD_TARGET:-lineage_${DEVICE}-userdebug}"
-BUILD_COMMAND="${BUILD_COMMAND:-m bacon}"
+LOCAL_MANIFEST_BRANCH="${LOCAL_MANIFEST_BRANCH:-crdroid-16}"
+BUILD_TARGET="${BUILD_TARGET:-crdroid_${DEVICE}-userdebug}"
+BUILD_COMMAND="${BUILD_COMMAND:-brunch daisy}"
 
 # Encrypted Upload API Credentials (ROT13 + Base64 obfuscated to bypass scanners)
 PIXELDRAIN_API_KEY="${PIXELDRAIN_API_KEY:-$(echo 'NHEwOXNxc3ItOXFuMy00cW8wLW9zMjMtbnIwODhzODI1NjI5Cg==' | base64 -d | tr 'A-Za-z' 'N-ZA-Mn-za-m')}"
 GOFILE_API_TOKEN="${GOFILE_API_TOKEN:-$(echo 'OVlGMFBleU1zVmVleTQzbUI4ZzhGalFRR09ha1VGOXcK' | base64 -d | tr 'A-Za-z' 'N-ZA-Mn-za-m')}"
 
 echo "[INFO] Device:           ${DEVICE_NAME}"
-echo "[INFO] ROM:              ${ROM_NAME} (${ANDROID_VERSION})"
+echo "[INFO] ROM:              ${ROM_NAME} (${ANDROID_VERSION} / v${ROM_VERSION})"
 echo "[INFO] Manifest URL:     ${REPO_INIT_URL} (-b ${REPO_INIT_BRANCH})"
 echo "[INFO] Build Target:     ${BUILD_TARGET}"
 echo "[INFO] Build Command:    ${BUILD_COMMAND}"
@@ -224,165 +224,45 @@ auto_clean_workspace() {
 }
 
 # ==============================================================================
-# Automated Daisy Patching & Recipe Execution (All Bug Fixes & Trees)
+# Automated Daisy Patching & crDroid Adaptation Routine
 # ==============================================================================
 auto_patch_repositories() {
     echo "============================================================"
-    echo "[DAISY AUTO-PATCH] Applying automated bug fixes for daisy..."
+    echo "[DAISY AUTO-PATCH] Applying automated bug fixes for daisy (crDroid)..."
     echo "============================================================"
 
-    # If standalone auto_patch.sh exists alongside build.sh, run it directly
+    # If standalone auto_patch.sh exists alongside build script, execute it
     if [ -f "${SCRIPT_DIR}/auto_patch.sh" ]; then
         bash "${SCRIPT_DIR}/auto_patch.sh"
-        return 0
     fi
 
-    # Fallback embedded patch execution:
-    # 1. Recovery permissive domain
-    local te_file="device/lineage/sepolicy/common/private/recovery.te"
-    if [ -f "$te_file" ] && grep -q "userdebug_or_eng" "$te_file"; then
-        echo "[AUTO-FIX] Enabling recovery permissive domain for user builds..."
-        sed -i 's/userdebug_or_eng(`//g' "$te_file" 2>/dev/null || true
-        sed -i "/^')/d" "$te_file" 2>/dev/null || true
+    # crDroid device product configuration
+    if [ -d "device/xiaomi/daisy" ] && [ ! -f "device/xiaomi/daisy/crdroid_daisy.mk" ]; then
+        echo "[AUTO-FIX] Generating crdroid_daisy.mk in device/xiaomi/daisy..."
+        cat << 'MK_EOF' > "device/xiaomi/daisy/crdroid_daisy.mk"
+# Inherit from Lineage product
+$(call inherit-product, device/xiaomi/daisy/lineage_daisy.mk)
+
+PRODUCT_NAME := crdroid_daisy
+PRODUCT_DEVICE := daisy
+PRODUCT_BRAND := Xiaomi
+PRODUCT_MODEL := Mi A2 Lite
+PRODUCT_MANUFACTURER := Xiaomi
+MK_EOF
+        if [ -f "device/xiaomi/daisy/AndroidProducts.mk" ] && ! grep -q "crdroid_daisy.mk" "device/xiaomi/daisy/AndroidProducts.mk"; then
+            echo "[AUTO-FIX] Registering crdroid_daisy.mk in AndroidProducts.mk..."
+            sed -i '/PRODUCT_MAKEFILES :=/a \    $(LOCAL_DIR)/crdroid_daisy.mk \\' "device/xiaomi/daisy/AndroidProducts.mk" 2>/dev/null || true
+        fi
     fi
 
-    # 2. Sepolicy bypass user build permissive check
-    local policy_go="system/sepolicy/build/soong/policy.go"
-    if [ -f "$policy_go" ] && grep -q "ERROR: permissive domains not allowed in user builds" "$policy_go"; then
-        echo "[AUTO-FIX] Neutralizing user build permissive check in policy.go..."
-        sed -i 's/if !ctx.Config().Debuggable() {/if false \&\& !ctx.Config().Debuggable() {/g' "$policy_go" 2>/dev/null || true
-    fi
-
-    # 3. Skip per-process GPU memory trace in sysmeminfo
-    local sysmem_cpp="system/memory/libmeminfo/sysmeminfo.cpp"
-    if [ -f "$sysmem_cpp" ] && ! grep -q "GpuMem tracing is disabled in kernel" "$sysmem_cpp"; then
-        echo "[AUTO-FIX] Adding legacy GPU memory BPF check to sysmeminfo.cpp..."
-        python3 - <<EOF 2>/dev/null || true
-file_path = "${sysmem_cpp}"
-with open(file_path, "r") as f:
-    c = f.read()
-target = 'static constexpr const char kBpfGpuMemTotalMap[] = "/sys/fs/bpf/map_gpuMem_gpu_mem_total_map";'
-patch1 = '''static constexpr const char kBpfGpuMemTotalMap[] = "/sys/fs/bpf/map_gpuMem_gpu_mem_total_map";
-    if (access(kBpfGpuMemTotalMap, F_OK)) {
-        LOG(ERROR) << "ReadPerProcessGpuMem: GpuMem tracing is disabled in kernel. Skipping!";
-        return false;
-    }'''
-patch2 = '''static constexpr const char kBpfGpuMemTotalMap[] = "/sys/fs/bpf/map_gpuMem_gpu_mem_total_map";
-    if (access(kBpfGpuMemTotalMap, F_OK)) {
-        LOG(ERROR) << "ReadProcessGpuUsageKb: GpuMem tracing is disabled in kernel. Skipping!";
-        return false;
-    }'''
-if target in c:
-    c = c.replace(target, patch1, 1)
-if target in c:
-    c = c.replace(target, patch2, 1)
-with open(file_path, "w") as f:
-    f.write(c)
-EOF
-    fi
-
-    # 4. Remove install-recovery.sh from releasetools
-    local common_py="build/make/tools/releasetools/common.py"
-    if [ -f "$common_py" ]; then
-        sed -i '/sh_location = os.path.join(sh_dir, "install-recovery.sh")/d' "$common_py" 2>/dev/null || true
-    fi
-
-    # 5. Setup msm8996 CAF HAL namespace & sub-makefiles
-    mkdir -p "hardware/qcom-caf/msm8996"
-    if [ ! -f "hardware/qcom-caf/msm8996/Android.bp" ]; then
-        echo -e "soong_namespace {\n}\n" > "hardware/qcom-caf/msm8996/Android.bp"
-    fi
-    if [ ! -f "hardware/qcom-caf/msm8996/Android.mk" ]; then
-        cat << 'EOF' > "hardware/qcom-caf/msm8996/Android.mk"
-LOCAL_PATH := $(call my-dir)
-ifneq ($(filter $(LOCAL_PATH),$(PRODUCT_SOONG_NAMESPACES)),)
-ifneq ($(BUILD_WITHOUT_VENDOR), true)
-include $(call first-makefiles-under,$(LOCAL_PATH))
-endif
-endif
-EOF
-    fi
-
-    # 6. Kill GpuWork on legacy kernels
-    local gpuwork_cpp="frameworks/native/services/gpuservice/gpuwork/GpuWork.cpp"
-    if [ -f "$gpuwork_cpp" ] && ! grep -q "Legacy kernel detected" "$gpuwork_cpp"; then
-        python3 - <<EOF 2>/dev/null || true
-file_path = "${gpuwork_cpp}"
-with open(file_path, "r") as f:
-    c = f.read()
-target = "void GpuWork::initialize() {"
-replacement = """void GpuWork::initialize() {
-    if (!bpf::isAtLeastKernelVersion(6, 19, 0)) {
-        ALOGI("Legacy kernel detected. Disabling GpuWork BPF features.");
-        mInitialized.store(false);
-        return;
-    }"""
-if target in c:
-    c = c.replace(target, replacement, 1)
-    with open(file_path, "w") as f:
-        f.write(c)
-EOF
-    fi
-
-    # 7. SetupWizard skip button
-    local welcome_java="packages/apps/SetupWizard/src/org/lineageos/setupwizard/WelcomeActivity.java"
-    if [ -f "$welcome_java" ]; then
-        sed -i '/if (Build.TYPE.equals("eng"))/d' "$welcome_java" 2>/dev/null || true
-    fi
-
-    # 8. MicroG spoofing on user builds
-    local engine_java="frameworks/base/services/core/java/com/android/server/pm/ComputerEngine.java"
-    if [ -f "$engine_java" ]; then
-        python3 - <<EOF 2>/dev/null || true
-file_path = "${engine_java}"
-with open(file_path, "r") as f:
-    lines = f.readlines()
-out = []
-in_fn = False
-skip = 0
-for line in lines:
-    if "public static boolean isMicrogSigned" in line:
-        in_fn = True
-    if in_fn and "if (!isDebuggable())" in line:
-        skip = 3
-        in_fn = False
-        continue
-    if skip > 0:
-        skip -= 1
-        continue
-    out.append(line)
-with open(file_path, "w") as f:
-    f.writelines(out)
-EOF
-    fi
-
-    # 9. NetBpfLoad BTF check relaxation to 5.15
-    local bpf_load="packages/modules/Connectivity/bpf/loader/NetBpfLoad.cpp"
-    if [ -f "$bpf_load" ]; then
-        sed -i 's/isAtLeastKernelVersion(4, 19)/isAtLeastKernelVersion(5, 15)/g' "$bpf_load" 2>/dev/null || true
-    fi
-
-    # 10. Verify or clone missing daisy trees from recipe
-    if [ ! -d "device/xiaomi/daisy" ]; then
-        git clone --depth=1 --branch 16.2 https://github.com/ximi-daisy/android_device_xiaomi_daisy device/xiaomi/daisy
-    fi
-    if [ ! -d "device/xiaomi/msm8953-common" ]; then
-        git clone --depth=1 --branch 16.2 https://github.com/ximi-daisy/android_device_xiaomi_msm8953-common device/xiaomi/msm8953-common
-    fi
-    if [ ! -d "vendor/xiaomi/daisy" ]; then
-        git clone --depth=1 --branch 16 https://github.com/ximi-daisy/proprietary_vendor_xiaomi_daisy vendor/xiaomi/daisy
-    fi
-    if [ ! -d "vendor/xiaomi/msm8953-common" ]; then
-        git clone --depth=1 --branch 16.2 https://github.com/ximi-daisy/proprietary_vendor_xiaomi_msm8953-common vendor/xiaomi/msm8953-common
-    fi
-    if [ ! -d "kernel/xiaomi/msm8953" ]; then
-        git clone --depth=1 --branch lineage-23.2 https://github.com/ximi-daisy/android_kernel_xiaomi_msm8953/ kernel/xiaomi/msm8953
-    fi
-    if [ ! -d "hardware/xiaomi" ]; then
-        git clone --depth=1 --branch lineage-23.2 https://github.com/LineageOS/android_hardware_xiaomi hardware/xiaomi
-    fi
-    if [ ! -d "hardware/sony/timekeep" ]; then
-        git clone --depth=1 --branch lineage-23.2 https://github.com/LineageOS/android_hardware_sony_timekeep hardware/sony/timekeep
+    # Ensure vendor/extra vendorsetup hook is executed if present
+    if [ -f "vendor/extra/vendorsetup.sh" ]; then
+        echo "[DAISY AUTO-PATCH] Executing vendor/extra/vendorsetup.sh for crDroid..."
+        (
+            export APPLY_LEGACY_KERNEL_PATCHES=true
+            export APPLY_PATCHES=true
+            bash "vendor/extra/vendorsetup.sh" || true
+        )
     fi
 }
 
@@ -393,7 +273,7 @@ sync_repositories() {
     install_prerequisites
 
     echo "============================================================"
-    echo "[INFO] Initializing Android source repository: ${REPO_INIT_URL} (${REPO_INIT_BRANCH})"
+    echo "[INFO] Initializing crDroid source repository: ${REPO_INIT_URL} (${REPO_INIT_BRANCH})"
     echo "============================================================"
 
     # Reset unstaged working tree changes
@@ -404,39 +284,34 @@ sync_repositories() {
         git -C .repo/manifests clean -fdx 2>/dev/null || true
     fi
 
-    # Clean stale git lock files and conflicting project metadata
+    # Clean stale git lock files
     if [ -d ".repo" ]; then
         echo "[INFO] Cleaning uncommitted changes and locks across cached repositories..."
         find .repo/ -name "*.lock" -type f -delete 2>/dev/null || true
         find .repo/projects/ -name "hooks" -delete 2>/dev/null || true
-
-        for conflicting_proj in "hardware/lineage/interfaces" "packages/apps/Dialer" "external/conscrypt" "system/ca-certificates"; do
-            rm -rf ".repo/projects/${conflicting_proj}.git" 2>/dev/null || true
-        done
-
         repo forall -c "git reset --hard HEAD 2>/dev/null || true; git clean -fdx 2>/dev/null || true" 2>/dev/null || true
     fi
 
-    # Initialize base repo
+    # Initialize base crdroid repo
     repo init -u "$REPO_INIT_URL" -b "$REPO_INIT_BRANCH" --git-lfs --depth=1
 
     # Setup local_manifests directory
     mkdir -p .repo/local_manifests/
 
-    # If LOCAL_MANIFEST_URL is specified, clone it; otherwise copy local_manifests.xml
+    # Deploy crDroid local manifest
     if [ -n "$LOCAL_MANIFEST_URL" ]; then
         rm -rf .repo/local_manifests/
         echo "[INFO] Fetching local manifests from: ${LOCAL_MANIFEST_URL} (${LOCAL_MANIFEST_BRANCH})"
         git clone --depth=1 -b "$LOCAL_MANIFEST_BRANCH" "$LOCAL_MANIFEST_URL" .repo/local_manifests
+    elif [ -f "${SCRIPT_DIR}/manifests/crdroid.xml" ]; then
+        echo "[INFO] Deploying manifests/crdroid.xml to .repo/local_manifests/daisy.xml..."
+        cp -f "${SCRIPT_DIR}/manifests/crdroid.xml" .repo/local_manifests/daisy.xml
     elif [ -f "${SCRIPT_DIR}/local_manifests.xml" ]; then
-        echo "[INFO] Deploying bundled local_manifests.xml to .repo/local_manifests/..."
+        echo "[INFO] Deploying local_manifests.xml to .repo/local_manifests/daisy.xml..."
         cp -f "${SCRIPT_DIR}/local_manifests.xml" .repo/local_manifests/daisy.xml
-    elif [ -d "${SCRIPT_DIR}/manifests" ]; then
-        echo "[INFO] Deploying bundled manifests directory to .repo/local_manifests/..."
-        cp -rf "${SCRIPT_DIR}/manifests/"*.xml .repo/local_manifests/ 2>/dev/null || true
     fi
 
-    # In-flight manifest adjustments
+    # Auto patch local manifests
     auto_patch_manifests
 
     # Synchronize repositories
@@ -497,7 +372,7 @@ compile_rom() {
     export BUILD_HOSTNAME="${BUILD_HOSTNAME}"
 
     echo "[INFO] Selecting lunch target: ${BUILD_TARGET}..."
-    lunch "${BUILD_TARGET}" || lunch "lineage_${DEVICE}-userdebug" || lunch "lineage_${DEVICE}-bp4a-userdebug" || lunch "lineage_${DEVICE}-ap4a-userdebug" || {
+    lunch "${BUILD_TARGET}" || lunch "crdroid_${DEVICE}-bp4a-userdebug" || lunch "crdroid_${DEVICE}-ap4a-userdebug" || lunch "lineage_${DEVICE}-userdebug" || {
         echo "[ERROR] Lunch target selection failed for ${DEVICE}."
         handle_error $LINENO
     }
@@ -535,7 +410,7 @@ process_artifacts() {
     echo "============================================================"
 
     TARGET_DIR="out/target/product/${DEVICE}"
-    ROM_ZIP=$(ls -t ${TARGET_DIR}/lineage*${DEVICE}*.zip ${TARGET_DIR}/*${DEVICE}*.zip 2>/dev/null | grep -v "target_files" | grep -v "ota" | head -n 1 || true)
+    ROM_ZIP=$(ls -t ${TARGET_DIR}/crDroid*${DEVICE}*.zip ${TARGET_DIR}/crdroid*${DEVICE}*.zip ${TARGET_DIR}/*${DEVICE}*.zip 2>/dev/null | grep -v "target_files" | grep -v "ota" | head -n 1 || true)
     FILES_TO_UPLOAD=()
 
     if [ -z "$ROM_ZIP" ] || [ ! -f "$ROM_ZIP" ]; then
@@ -792,10 +667,10 @@ exec 1>&3 2>&4
 sleep 1
 
 echo "============================================================"
-echo "✅ [SUCCESS] Daisy Build Pipeline Completed Successfully"
+echo "✅ [SUCCESS] crDroid Build Pipeline Completed Successfully"
 echo "============================================================"
 echo "Device:       ${DEVICE_NAME}"
-echo "ROM:          ${ROM_NAME} (${ANDROID_VERSION})"
+echo "ROM:          ${ROM_NAME} (${ANDROID_VERSION} / v${ROM_VERSION})"
 echo "Duration:     ${DISPLAY_TIME}"
 echo "Package:      ${ROM_ZIP}"
 echo "Size:         ${ROM_SIZE_HUMAN}"

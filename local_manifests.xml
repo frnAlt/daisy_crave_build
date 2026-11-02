@@ -1,85 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest>
-  <!-- ============================================================ -->
-  <!-- Remote Definitions                                           -->
-  <!-- ============================================================ -->
   <remote name="github" fetch="https://github.com" clone-depth="1" />
-  <remote name="frnAlt" fetch="https://github.com/frnAlt" clone-depth="1" />
-  <remote name="ximi" fetch="https://github.com/ximi-daisy" clone-depth="1" />
-  <remote name="linag" fetch="https://github.com/LineageOS" clone-depth="1" />
 
-  <!-- ============================================================ -->
-  <!-- Upstream Removals (Prevent Soong / Make Path Duplication)    -->
-  <!-- ============================================================ -->
+  <!-- Upstream Removals -->
   <remove-project path="prebuilts/clang/host/darwin-x86" />
   <remove-project path="prebuilts/go/darwin-x86" />
 
-  <remove-project name="LineageOS/android_build" />
-  <remove-project name="platform/build" />
+  <!-- Hardware Trees -->
+  <project path="hardware/qcom-caf/msm8996/audio" name="LineageOS/android_hardware_qcom_audio" remote="github" revision="lineage-22.2-caf-msm8996" />
+  <project path="hardware/qcom-caf/msm8996/display" name="LineageOS/android_hardware_qcom_display" remote="github" revision="lineage-22.2-caf-msm8996" />
+  <project path="hardware/qcom-caf/msm8996/media" name="LineageOS/android_hardware_qcom_media" remote="github" revision="lineage-22.2-caf-msm8996" />
+  <project path="hardware/sony/timekeep" name="LineageOS/android_hardware_sony_timekeep" remote="github" revision="lineage-23.2" clone-depth="100" />
+  <project path="hardware/xiaomi" name="LineageOS/android_hardware_xiaomi" remote="github" revision="lineage-23.2" clone-depth="100" />
 
-  <remove-project name="LineageOS/android_hardware_interfaces" />
-  <remove-project name="platform/hardware/interfaces" />
-
-  <remove-project name="LineageOS/android_kernel_configs" />
-  <remove-project name="LineageOS/android_vendor_lineage" />
-  <remove-project name="LineageOS/android_bootable_recovery" />
-
-  <remove-project name="platform/packages/modules/Connectivity" />
-  <remove-project name="platform/system/bpf" />
-
-  <remove-project name="LineageOS/android_hardware_qcom_media" />
-  <remove-project name="LineageOS/android_hardware_qcom_display" />
-  <remove-project name="LineageOS/android_hardware_qcom_audio" />
-  <remove-project name="LineageOS/android_hardware_qcom_wlan" />
-  <remove-project name="LineageOS/android_hardware_qcom-caf_common" />
-
-  <!-- ============================================================ -->
-  <!-- Xiaomi Mi A2 Lite (daisy) Device Trees                      -->
-  <!-- ============================================================ -->
-  <project path="device/xiaomi/daisy" name="frnAlt/android_device_xiaomi_daisy" remote="github" revision="16.2" />
+  <!-- Device Trees -->
   <project path="device/xiaomi/msm8953-common" name="frnAlt/android_device_xiaomi_msm8953-common" remote="github" revision="16.2" />
+  <project path="device/xiaomi/daisy" name="frnAlt/android_device_xiaomi_daisy" remote="github" revision="16.2" />
 
-  <!-- ============================================================ -->
-  <!-- Xiaomi Mi A2 Lite (daisy) Proprietary Vendor Trees           -->
-  <!-- ============================================================ -->
-  <project path="vendor/xiaomi/daisy" name="frnAlt/proprietary_vendor_xiaomi_daisy" remote="github" revision="16" />
+  <!-- Vendor Trees -->
   <project path="vendor/xiaomi/msm8953-common" name="frnAlt/proprietary_vendor_xiaomi_msm8953-common" remote="github" revision="16.2" />
+  <project path="vendor/xiaomi/daisy" name="frnAlt/proprietary_vendor_xiaomi_daisy" remote="github" revision="16" />
   <project path="vendor/fingerprint/opensource/interfaces" name="frnAlt/android_vendor_fingerprint_opensource_interfaces" remote="github" revision="lineage-21" />
 
-  <!-- ============================================================ -->
-  <!-- Vendor Extra Patches & Pixel Clocks                          -->
-  <!-- ============================================================ -->
-  <project path="vendor/extra" name="frnAlt/android_vendor_extra-daisy" remote="github" revision="16.2" clone-depth="100" />
+  <!-- Vendor Extra Patches for crDroid 12 / Android 16 & Pixel Clocks -->
+  <project path="vendor/extra" name="frnAlt/android_vendor_extra-daisy" remote="github" revision="crdroid-12" clone-depth="100" />
   <project path="vendor/pixel_clocks" name="Positron-B/android_vendor_pixel_clocks" remote="github" />
 
-  <!-- ============================================================ -->
-  <!-- Xiaomi MSM8953 Kernel Source Tree                           -->
-  <!-- ============================================================ -->
+  <!-- Kernel Source -->
   <project path="kernel/xiaomi/msm8953" name="frnAlt/android_kernel_xiaomi_msm8953" remote="github" revision="lineage-23.2" clone-depth="50" />
-
-  <!-- ============================================================ -->
-  <!-- Common Xiaomi Hardware Repositories                         -->
-  <!-- ============================================================ -->
-  <project path="hardware/xiaomi" name="LineageOS/android_hardware_xiaomi" remote="github" revision="lineage-23.2" clone-depth="100" />
-  <project path="hardware/sony/timekeep" name="LineageOS/android_hardware_sony_timekeep" remote="github" revision="lineage-23.2" clone-depth="100" />
-
-  <!-- ============================================================ -->
-  <!-- Legacy MSM8953 CAF 8996 Audio / Display / Media HALs         -->
-  <!-- ============================================================ -->
-  <project path="hardware/qcom-caf/msm8996/media" name="LineageOS/android_hardware_qcom_media" remote="github" revision="lineage-22.2-caf-msm8996" />
-  <project path="hardware/qcom-caf/msm8996/display" name="LineageOS/android_hardware_qcom_display" remote="github" revision="lineage-22.2-caf-msm8996" />
-  <project path="hardware/qcom-caf/msm8996/audio" name="LineageOS/android_hardware_qcom_audio" remote="github" revision="lineage-22.2-caf-msm8996" />
-  <project path="hardware/qcom-caf/common" name="ximi-daisy/android_hardware_qcom-caf_common" remote="github" revision="lineage-23.2-tweaked" />
-  <project path="hardware/qcom/wlan" name="ximi-daisy/android_hardware_qcom_wlan" remote="github" revision="lineage-23.2-tweaked" />
-  <project path="hardware/qcom-caf/wlan" name="ximi-daisy/android_hardware_qcom_wlan" remote="github" revision="lineage-23.2-caf-tweaked" />
-
-  <!-- ============================================================ -->
-  <!-- Legacy Tweaked Build System & BPF/Connectivity               -->
-  <!-- ============================================================ -->
-  <project path="build/make" name="ximi-daisy/android_build" remote="github" revision="lineage-23.2-tweaked" />
-  <project path="hardware/interfaces" name="ximi-daisy/android_hardware_interfaces" remote="github" revision="lineage-23.2-tweaked" />
-  <project path="kernel/configs" name="ximi-daisy/android_kernel_configs" remote="github" revision="lineage-23.2-tweaked" />
-  <project path="packages/modules/Connectivity" name="ximi-daisy/android_packages_modules_Connectivity" remote="github" revision="lineage-23.2-tweaked" />
-  <project path="system/bpf" name="ximi-daisy/android_system_bpf" remote="github" revision="lineage-23.2-tweaked" />
-
 </manifest>
